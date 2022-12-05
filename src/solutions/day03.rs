@@ -9,7 +9,6 @@ fn get_prios() -> HashMap<char, i32> {
     return prio;
 }
 
-
 pub fn solve_p1(data: &str) -> i32 {
     let prio = get_prios();
     data.lines()
@@ -45,9 +44,8 @@ mod test {
     use super::solve_p2;
 
     #[test]
-    fn p2_test () {
+    fn p2_test() {
         let data = "vJrwpWtwJgWrhcsFMMfFFhFp\njqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL\nPmmdzqPrVvPwwTWBwg\nwMqvLMZHhHMvwLHjbvcjnnSBnvTQFn\nttgJtRGJQctTZtZT\nCrZsJsPPZsGzwwsLwLmpwMDw\n";
         assert_eq!(solve_p2(data), 70);
     }
 }
-
