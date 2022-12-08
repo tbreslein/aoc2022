@@ -17,7 +17,6 @@ fn parse(data: &str) -> (Hold, Instructions) {
         .split_whitespace()
         .collect::<Vec<_>>()
         .len();
-    dbg!(length);
     let mut hold: Hold = vec![vec![]; length];
     for line in hold_iterator {
         let chars: Vec<char> = line.chars().collect();
@@ -37,23 +36,46 @@ fn parse(data: &str) -> (Hold, Instructions) {
             let words: Vec<&str> = line.split_whitespace().collect();
             return Step {
                 amount: words[1].parse::<usize>().unwrap(),
-                from: words[3].parse().unwrap(),
-                to: words[5].parse().unwrap(),
+                from: words[3].parse::<usize>().unwrap() - 1,
+                to: words[5].parse::<usize>().unwrap() - 1,
             };
         })
         .collect();
     return (hold, instructions);
 }
 
-pub fn solve_p1(data: &str) -> i32 {
-    let (hold, instructions) = parse(data);
-    dbg!(&hold);
-    dbg!(&instructions);
-    0
+pub fn solve_p1(data: &str) -> String {
+    let (mut hold, instructions) = parse(data);
+    for step in instructions {
+        for _ in 0..step.amount {
+            let c = hold[step.from].pop().unwrap();
+            hold[step.to].push(c);
+        }
+    }
+    let mut result: String = "".to_string();
+    for mut stack in hold {
+        result.push(stack.pop().unwrap());
+    }
+    return result;
 }
 
-pub fn solve_p2(data: &str) -> i32 {
-    0
+pub fn solve_p2(data: &str) -> String {
+    let (mut hold, instructions) = parse(data);
+    for step in instructions {
+        let mut cs = vec![];
+        for _ in 0..step.amount {
+            cs.push(hold[step.from].pop().unwrap());
+        }
+        cs.reverse();
+        for c in cs {
+            hold[step.to].push(c);
+        }
+    }
+    let mut result: String = "".to_string();
+    for mut stack in hold {
+        result.push(stack.pop().unwrap());
+    }
+    return result;
 }
 
 #[cfg(test)]
@@ -72,7 +94,7 @@ move 1 from 2 to 1
 move 3 from 1 to 3
 move 2 from 2 to 1
 move 1 from 1 to 2";
-        assert_eq!(solve_p1(&data), 2);
+        assert_eq!(solve_p1(&data), "CMZ");
     }
 
     #[test]
@@ -86,6 +108,6 @@ move 1 from 2 to 1
 move 3 from 1 to 3
 move 2 from 2 to 1
 move 1 from 1 to 2";
-        assert_eq!(solve_p2(&data), 4);
+        assert_eq!(solve_p2(&data), "MCD");
     }
 }

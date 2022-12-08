@@ -1,4 +1,5 @@
 #![feature(iter_next_chunk)]
+#![feature(slice_partition_dedup)]
 
 mod common;
 mod solutions;
