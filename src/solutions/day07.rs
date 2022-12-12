@@ -26,6 +26,13 @@ impl Node {
     pub fn add_child(&mut self, new_node: Rc<RefCell<Node>>) {
         self.children.push(new_node);
     }
+
+    pub fn measure_size(&mut self) -> usize {
+        for child in self.children.iter() {
+            self.size += child.borrow_mut().measure_size();
+        }
+        return self.size;
+    }
 }
 
 fn set_node_to_child(node: &mut Rc<RefCell<Node>>, name: String) {
@@ -105,15 +112,33 @@ fn parse(data: &str) -> Rc<RefCell<Node>> {
     }
 
     // Now that the dir structure is parsed, let's fix the recursive size values of each dir
+    // NOTE: I could have probably done this during the exploration / when parsing the commands,
+    // but since we cannot assume the traversel in the commands to be "well behaved" (no jumping
+    // around, apart from "cd .." chains), I decided to split this into two parts.
     current_node = Rc::clone(&root_node);
+    current_node.borrow_mut().measure_size();
 
     return root_node;
 }
 
 pub fn solve_p1(data: &str) -> usize {
     let fs = parse(data);
-    dbg!(fs);
-    return 0;
+    return find_small_dir_sum(&fs, 0);
+}
+
+fn find_small_dir_sum(fs: &Rc<RefCell<Node>>, sum: usize) -> usize {
+    return sum
+        // Make sure to only count directories; files do not have children, so just check whether
+        // the children field is empty
+        + if !fs.borrow().children.is_empty() && fs.borrow().size < 100_000 {
+            fs.borrow().size
+        } else {
+            0
+        }
+        + fs.borrow()
+            .children
+            .iter()
+            .fold(0, |acc, child| acc + find_small_dir_sum(child, sum));
 }
 
 pub fn solve_p2(_data: &str) -> usize {
