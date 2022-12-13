@@ -10,6 +10,15 @@ use std::{
 struct Node {
     pub name: String,
     pub size: usize,
+    // Both the parent and the children are reference counted to make sure that they are only
+    // dropped when actually no body is referencing them anymore.
+    // The parent needs a weak reference to the parent so that dropping this node does not also
+    // attempt to drop the parent (which would result in an endless loop, because then the parent
+    // would try to drop the child it has a strong reference to, but then that child will, again,
+    // try to drop the parent, and so on...)
+    // Also, in both cases the nodes are wrapped in RefCells to enable inner mutability, since in
+    // my design for this solution I need to be able to change the size field after the fact. I
+    // could have done without it, if I measured directory size directly.
     pub parent: Option<Weak<RefCell<Node>>>,
     pub children: Vec<Rc<RefCell<Node>>>,
 }
@@ -36,6 +45,11 @@ impl Node {
     }
 }
 
+fn set_node_to_parent(node: &mut Rc<RefCell<Node>>) {
+    let parent = Rc::clone(&node.borrow().parent.as_ref().unwrap().upgrade().unwrap());
+    *node = parent;
+}
+
 fn set_node_to_child(node: &mut Rc<RefCell<Node>>, name: String) {
     if let Some(child) = get_child_node(node, name) {
         *node = child;
@@ -59,21 +73,12 @@ fn parse(data: &str) -> Rc<RefCell<Node>> {
     let root_node = Rc::new(RefCell::new(Node::new("/".to_string(), 0)));
     let mut current_node = Rc::clone(&root_node);
 
+    // loop annotation needed, because the ls block needs to be able to continue this loop from
+    // within a nested while loop
     'core: while let Some(line) = lines.next() {
         if let Some(dir) = line.strip_prefix("$ cd ") {
             match dir {
-                ".." => {
-                    let parent = Rc::clone(
-                        &current_node
-                            .borrow()
-                            .parent
-                            .as_ref()
-                            .unwrap()
-                            .upgrade()
-                            .unwrap(),
-                    );
-                    current_node = parent;
-                }
+                ".." => set_node_to_parent(&mut current_node),
                 "/" => current_node = root_node.clone(),
                 _ => set_node_to_child(&mut current_node, dir.to_string()),
             };
@@ -81,6 +86,9 @@ fn parse(data: &str) -> Rc<RefCell<Node>> {
         }
 
         if line == "$ ls" {
+            // another while loop that keeps peeking at the next line until that next line is
+            // another command instead of ls output. When that point is reached, go back to the
+            // core loop and iterate that
             'ls_output: while let Some(next_line) = lines.peek() {
                 if next_line.starts_with("$") {
                     continue 'core;
@@ -123,7 +131,8 @@ fn parse(data: &str) -> Rc<RefCell<Node>> {
 }
 
 pub fn solve_p1(data: &str) -> usize {
-    let fs = parse(data);
+    // recursively iterate through each node that is not just a file and whose size is smaller
+    // than 100_000, and sum up the sizes of those nodes
     fn f(fs: &Rc<RefCell<Node>>, sum: usize) -> usize {
         return fs.borrow()
             .children
@@ -137,12 +146,14 @@ pub fn solve_p1(data: &str) -> usize {
             0
         } + sum;
     }
+
+    let fs = parse(data);
     return f(&fs, 0);
 }
 
 pub fn solve_p2(data: &str) -> usize {
-    let fs = parse(data);
-    let needed_space = 30_000_000 - (70_000_000 - fs.borrow().size);
+    // recursively iterate through each node that is not just a file and whose size is larger
+    // than the needed_space, and find the smallest among those
     fn f(fs: &Rc<RefCell<Node>>, min_size: usize, needed_space: usize) -> usize {
         return min(
             fs.borrow().children.iter().fold(min_size, |acc, child| {
@@ -155,6 +166,9 @@ pub fn solve_p2(data: &str) -> usize {
             },
         );
     }
+
+    let fs = parse(data);
+    let needed_space = 30_000_000 - (70_000_000 - fs.borrow().size);
     return f(&fs, usize::MAX, needed_space);
 }
 
