@@ -55,7 +55,7 @@ pub fn solve_p1(data: &str) -> usize {
 }
 
 pub fn solve_p2(data: &str) -> usize {
-    solve::<9>(&data)
+    solve::<10>(&data)
 }
 
 fn solve<const S: usize>(data: &str) -> usize {
