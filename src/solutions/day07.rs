@@ -1,5 +1,6 @@
 use std::{
     cell::RefCell,
+    cmp::min,
     rc::{Rc, Weak},
 };
 
@@ -123,26 +124,38 @@ fn parse(data: &str) -> Rc<RefCell<Node>> {
 
 pub fn solve_p1(data: &str) -> usize {
     let fs = parse(data);
-    return find_small_dir_sum(&fs, 0);
-}
-
-fn find_small_dir_sum(fs: &Rc<RefCell<Node>>, sum: usize) -> usize {
-    return sum
+    fn f(fs: &Rc<RefCell<Node>>, sum: usize) -> usize {
+        return fs.borrow()
+            .children
+            .iter()
+            .fold(0, |acc, child| acc + f(child, sum))
         // Make sure to only count directories; files do not have children, so just check whether
         // the children field is empty
         + if !fs.borrow().children.is_empty() && fs.borrow().size < 100_000 {
             fs.borrow().size
         } else {
             0
-        }
-        + fs.borrow()
-            .children
-            .iter()
-            .fold(0, |acc, child| acc + find_small_dir_sum(child, sum));
+        } + sum;
+    }
+    return f(&fs, 0);
 }
 
-pub fn solve_p2(_data: &str) -> usize {
-    return 0;
+pub fn solve_p2(data: &str) -> usize {
+    let fs = parse(data);
+    let needed_space = 30_000_000 - (70_000_000 - fs.borrow().size);
+    fn f(fs: &Rc<RefCell<Node>>, min_size: usize, needed_space: usize) -> usize {
+        return min(
+            fs.borrow().children.iter().fold(min_size, |acc, child| {
+                min(acc, f(child, min_size, needed_space))
+            }),
+            if !fs.borrow().children.is_empty() && fs.borrow().size > needed_space {
+                fs.borrow().size
+            } else {
+                usize::MAX
+            },
+        );
+    }
+    return f(&fs, usize::MAX, needed_space);
 }
 
 #[cfg(test)]
@@ -180,7 +193,29 @@ $ ls
 
     #[test]
     fn p2_test() {
-        let data = "mjqjpqmgbljsphdztnvjfqwrcgsmlb";
-        assert_eq!(solve_p2(&data), 19);
+        let data = "$ cd /
+$ ls
+dir a
+14848514 b.txt
+8504156 c.dat
+dir d
+$ cd a
+$ ls
+dir e
+29116 f
+2557 g
+62596 h.lst
+$ cd e
+$ ls
+584 i
+$ cd ..
+$ cd ..
+$ cd d
+$ ls
+4060174 j
+8033020 d.log
+5626152 d.ext
+7214296 k";
+        assert_eq!(solve_p2(&data), 24933642);
     }
 }
