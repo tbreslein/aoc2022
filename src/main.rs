@@ -1,3 +1,4 @@
+#![feature(int_roundings)]
 #![feature(iter_next_chunk)]
 #![feature(slice_partition_dedup)]
 

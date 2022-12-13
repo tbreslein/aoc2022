@@ -31,54 +31,27 @@ fn are_adjacent(head: &(i32, i32), tail: &(i32, i32)) -> bool {
     head.0.abs_diff(tail.0) <= 1 && head.1.abs_diff(tail.1) <= 1
 }
 
-pub fn solve_p1(data: &str) -> usize {
-    let commands = parse(data);
-    let mut set = HashSet::new();
-    let mut head = (0, 0);
-    let mut tail = (0, 0);
-    set.insert(tail.clone());
-
-    for command in commands.iter() {
-        match command {
-            Command::R(steps) => {
-                for _ in 1..=*steps {
-                    head = (head.0, head.1 + 1);
-                    if !are_adjacent(&head, &tail) {
-                        tail = (head.0, head.1 - 1);
-                        set.insert(tail.clone());
-                    }
-                }
-            }
-            Command::L(steps) => {
-                for _ in 1..=*steps {
-                    head = (head.0, head.1 - 1);
-                    if !are_adjacent(&head, &tail) {
-                        tail = (head.0, head.1 + 1);
-                        set.insert(tail.clone());
-                    }
-                }
-            }
-            Command::U(steps) => {
-                for _ in 1..=*steps {
-                    head = (head.0 + 1, head.1);
-                    if !are_adjacent(&head, &tail) {
-                        tail = (head.0 - 1, head.1);
-                        set.insert(tail.clone());
-                    }
-                }
-            }
-            Command::D(steps) => {
-                for _ in 1..=*steps {
-                    head = (head.0 - 1, head.1);
-                    if !are_adjacent(&head, &tail) {
-                        tail = (head.0 + 1, head.1);
-                        set.insert(tail.clone());
-                    }
-                }
-            }
-        };
+fn move_rope<const S: usize>(rope: &mut [(i32, i32); S], set: &mut HashSet<(i32, i32)>) {
+    for i in 1..S {
+        if are_adjacent(&rope[i-1], &rope[i]) {
+            continue;
+        }
+        if rope[i-1].0 > rope[i].0 {
+            rope[i].0 = (rope[i-1].0 + rope[i].0).div_ceil(2);
+        } else {
+            rope[i].0 = (rope[i-1].0 + rope[i].0).div_floor(2);
+        }
+        if rope[i-1].1 > rope[i].1 {
+            rope[i].1 = (rope[i-1].1 + rope[i].1).div_ceil(2);
+        } else {
+            rope[i].1 = (rope[i-1].1 + rope[i].1).div_floor(2);
+        }
     }
-    return set.len();
+    set.insert(rope.last().unwrap().clone());
+}
+
+pub fn solve_p1(data: &str) -> usize {
+    solve::<2>(&data)
 }
 
 pub fn solve_p2(data: &str) -> usize {
@@ -88,47 +61,36 @@ pub fn solve_p2(data: &str) -> usize {
 fn solve<const S: usize>(data: &str) -> usize {
     let commands = parse(data);
     let mut set = HashSet::new();
-    let rope = &mut [(0, 0); S];
+    let mut rope = &mut [(0, 0); S];
 
-    let mut old_current;
-    let mut old_current2;
     set.insert(rope.last().unwrap().clone());
 
     for command in commands.iter() {
         match command {
             Command::R(steps) => {
                 for _ in 1..=*steps {
-                    old_current2 = rope[0];
                     rope[0] = (rope[0].0, rope[0].1 + 1);
-                    for i in 1..S {
-                        if !are_adjacent(&rope[i - 1], &rope[i]) {
-                            old_current = rope[i];
-                            rope[i] = old_current2;
-                            old_current2 = old_current;
-                        }
-                    }
-                    set.insert(rope.last().unwrap().clone());
+                    move_rope(&mut rope, &mut set);
                 }
-                dbg!(&rope);
             }
-            Command::L(steps) => {}
+            Command::L(steps) => {
+                for _ in 1..=*steps {
+                    rope[0] = (rope[0].0, rope[0].1 - 1);
+                    move_rope(&mut rope, &mut set);
+                }
+            }
             Command::U(steps) => {
                 for _ in 1..=*steps {
-                    old_current2 = rope[0];
                     rope[0] = (rope[0].0 + 1, rope[0].1);
-                    for i in 1..S {
-                        if !are_adjacent(&rope[i - 1], &rope[i]) {
-                            old_current = rope[i];
-                            rope[i] = old_current2;
-                            old_current2 = old_current;
-                        }
-                    }
-                    set.insert(rope.last().unwrap().clone());
+                    move_rope(&mut rope, &mut set);
                 }
-                dbg!(&rope);
-                return 0;
             }
-            Command::D(steps) => {}
+            Command::D(steps) => {
+                for _ in 1..=*steps {
+                    rope[0] = (rope[0].0 - 1, rope[0].1);
+                    move_rope(&mut rope, &mut set);
+                }
+            }
         };
     }
     return set.len();
