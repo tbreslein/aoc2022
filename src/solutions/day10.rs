@@ -1,6 +1,6 @@
-pub fn solve_p1(data: &str) -> i32 {
+fn parse(data: &str) -> Vec<i32> {
     // just to make sure the that indexes overlap with the cycles needed for the solution
-    let mut process = vec![0];
+    let mut process = vec![1];
     let mut x = 1;
     for line in data.lines() {
         process.push(x);
@@ -9,6 +9,11 @@ pub fn solve_p1(data: &str) -> i32 {
             process.push(x);
         }
     }
+    return process;
+}
+
+pub fn solve_p1(data: &str) -> i32 {
+    let process = parse(data);
     return (0..=5)
         .map(|z| {
             let i = 20 + z * 40;
@@ -17,8 +22,24 @@ pub fn solve_p1(data: &str) -> i32 {
         .sum();
 }
 
-pub fn solve_p2(data: &str) -> usize {
-    0
+pub fn solve_p2(data: &str) -> String {
+    let xs = parse(data);
+    let mut sprite: [i32; 3];
+    let mut picture = "".to_string();
+    for (i, x) in xs.iter().enumerate() {
+        let position = i % 40;
+        if position == 0 {
+            picture.push('\n');
+        }
+        sprite = [*x - 1, *x, *x + 1];
+        if sprite.contains(&(position as i32)) {
+            picture.push('#');
+        } else {
+            picture.push('.');
+        }
+    }
+    picture.pop();
+    return picture.to_string();
 }
 
 #[cfg(test)]
@@ -325,6 +346,15 @@ addx -11
 noop
 noop
 noop";
-        assert_eq!(solve_p2(&data), 36);
+        assert_eq!(
+            solve_p2(&data),
+            "\n##..##..##..##..##..##..##..##..##..##..
+###...###...###...###...###...###...###.
+####....####....####....####....####....
+#####.....#####.....#####.....#####.....
+######......######......######......####
+#######.......#######.......#######.....\n"
+                .to_string()
+        );
     }
 }
