@@ -92,26 +92,29 @@ pub fn solve_p1(data: &str) -> i32 {
 
     let mut visited = HashSet::new();
     let mut queue = BinaryHeap::new();
+    let mut neighbors = Vec::with_capacity(4); // any node never has more than 4 neighbors
+
     queue.push(Edge {
         node: (j, i),
         cost: 0,
     });
 
-    let mut neighbors = Vec::with_capacity(3); // any node never has more than 3 unvisited neighbors
     while let Some(Edge { node, cost }) = queue.pop() {
-        if !visited.insert(node) {
-            continue;
-        }
-
         update_neighbors(&node, &map, &mut neighbors);
         for neighbor in neighbors.iter() {
+            if visited.contains(neighbor) {
+                continue;
+            }
+            visited.insert(neighbor.clone());
+            let mut next_node = &mut map[neighbor.0][neighbor.1];
             let new_cost = cost + 1;
-            if map[neighbor.0][neighbor.1].is_end {
+
+            if next_node.is_end {
                 return new_cost;
             }
 
-            if new_cost < map[neighbor.0][neighbor.1].cost {
-                map[neighbor.0][neighbor.1].cost = new_cost;
+            if new_cost < next_node.cost {
+                next_node.cost = new_cost;
                 queue.push(Edge {
                     node: neighbor.clone(),
                     cost: new_cost,
